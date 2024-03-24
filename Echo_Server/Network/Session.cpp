@@ -3,7 +3,7 @@
 #include "IocpObject.h"
 #include "IoEvent.h"
 
-Session::Session(HANDLE iocpHandle) : _iocpHandle(iocpHandle), _recvEvent(EventType::Recv), _connectEvent(EventType::Connect)
+Session::Session(HANDLE iocpHandle) : _iocpHandle(iocpHandle), _recvEvent(EventType::Recv), _connectEvent(EventType::Connect), _sendEvent(EventType::Send)
 {
 	_socket = ::WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 
@@ -145,12 +145,13 @@ void Session::Send(char* buffer)
 	memcpy(tmp, buffer, 65535);
 	wsaBuf.buf = tmp;
 	wsaBuf.len = sizeof(tmp);
-	IoEvent sendEvnet(EventType::Send);
-	sendEvnet.Init();
-	sendEvnet.owner = shared_from_this();
+
+	// 현재 수정은 send가 동시에 벌어지지 않는다는 가정하에서의 수정입니다. 여러번 send가 일어나도 문제 없도록 어떻게 고쳐야할지 판단 부탁드립니다.
+	_sendEvent.Init();
+	_sendEvent.owner = shared_from_this();
 
 	DWORD numOfBytes = 0;
-	if (SOCKET_ERROR == ::WSASend(_socket, &wsaBuf, 1, & numOfBytes, 0, &sendEvnet, nullptr)) {
+	if (SOCKET_ERROR == ::WSASend(_socket, &wsaBuf, 1, & numOfBytes, 0, &_sendEvent, nullptr)) {
 		
 		int errorCode = ::WSAGetLastError();
 
