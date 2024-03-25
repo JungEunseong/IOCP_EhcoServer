@@ -1,9 +1,9 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "Session.h"
 #include "IocpObject.h"
 #include "IoEvent.h"
 
-Session::Session(HANDLE iocpHandle) : _iocpHandle(iocpHandle), _recvEvent(EventType::Recv), _connectEvent(EventType::Connect)
+Session::Session(HANDLE iocpHandle) : _iocpHandle(iocpHandle), _recvEvent(EventType::Recv), _connectEvent(EventType::Connect), _sendEvent(EventType::Send)
 {
 	_socket = ::WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 
@@ -145,12 +145,13 @@ void Session::Send(char* buffer)
 	memcpy(tmp, buffer, 65535);
 	wsaBuf.buf = tmp;
 	wsaBuf.len = sizeof(tmp);
-	IoEvent sendEvnet(EventType::Send);
-	sendEvnet.Init();
-	sendEvnet.owner = shared_from_this();
+
+	// 현재는 send가 동시에 여러번 발생하지 않는다고 가정하고 life-cycle을 가져갔습니다. send가 동시에 여러번 trigger 될 수 있게 고치려면 어떻게 해야 될지 판단해주세요.
+	_sendEvent.Init();
+	_sendEvent.owner = shared_from_this();
 
 	DWORD numOfBytes = 0;
-	if (SOCKET_ERROR == ::WSASend(_socket, &wsaBuf, 1, & numOfBytes, 0, &sendEvnet, nullptr)) {
+	if (SOCKET_ERROR == ::WSASend(_socket, &wsaBuf, 1, & numOfBytes, 0, &_sendEvent, nullptr)) {
 		
 		int errorCode = ::WSAGetLastError();
 

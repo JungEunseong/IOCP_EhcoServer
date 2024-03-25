@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <set>
 
 DWORD WINAPI EchoThreadMain();
 
@@ -18,12 +19,12 @@ int main() {
 
 	std::thread worker(EchoThreadMain);
 
-
-	for (int i = 0; i < 10; i++) {
+	std::set<std::shared_ptr<Session>> sessions;
+	for (int i = 0; i < 100; i++) {
 		std::shared_ptr<Session> session = std::make_shared<Session>(iocpHandle);
 		session->Connect("127.0.0.1",7777);
+		sessions.insert(session);
 	}
-
 
 	worker.join();
 }
@@ -36,7 +37,7 @@ DWORD WINAPI EchoThreadMain() {
 		ULONG_PTR key = 0;
 
 		if (true == ::GetQueuedCompletionStatus(iocpHandle, &bytesTransffered,&key, reinterpret_cast<LPOVERLAPPED*>(&ioEvent), INFINITE)) {
-			std::shared_ptr<IocpObject> iocpObject = ioEvent->owner;
+			auto iocpObject = ioEvent->owner;
 			iocpObject->OnExecute(ioEvent);
 		}
 		else {
