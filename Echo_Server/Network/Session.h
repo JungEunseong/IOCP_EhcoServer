@@ -42,7 +42,9 @@ private:
 
 	IoEvent _connectEvent;
 	IoEvent _recvEvent;
+	IoEvent _sendEvent;
 	char* _recvBuffer;
+
 
 	LPFN_CONNECTEX ConnectEx;
 };
